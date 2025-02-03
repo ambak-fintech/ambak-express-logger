@@ -21,7 +21,7 @@
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage --coverageThreshold.global.statements=40 --coverageThreshold.global.functions=40 --coverageThreshold.global.lines=40 --coverageThreshold.global.branches=40"
+    "test:coverage": "jest --coverage --coverageThreshold.global.statements=40 --coverageThreshold.global.functions=40 --coverageThreshold.global.lines=40 --coverageThreshold.global.branches=40",
     "test:ci": "jest --ci --coverage --runInBand",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.js\"",
