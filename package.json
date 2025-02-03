@@ -1,8 +1,23 @@
 {
   "name": "ambak-express-logger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A comprehensive logging middleware for Express applications with distributed tracing support",
-  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ambak-fintech/ambak-express-logger.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ambak-fintech/ambak-express-logger/issues"
+  },
+  "homepage": "https://github.com/ambak-fintech/ambak-express-logger#readme",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
@@ -11,7 +26,11 @@
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.js\"",
     "build": "babel src -d dist",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags"
   },
   "keywords": [
     "express",
@@ -21,7 +40,12 @@
     "distributed-tracing",
     "logging"
   ],
-  "author": "",
+  "author": {
+    "name": "Ambak Fintech",
+    "email": "info@ambak.com",
+    "url": "https://github.com/ambak-fintech"
+  },
+  "contributors": [],
   "license": "MIT",
   "dependencies": {
     "pino": "^8.0.0",
@@ -42,5 +66,8 @@
   },
   "engines": {
     "node": ">=14.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
