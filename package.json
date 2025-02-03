@@ -1,0 +1,46 @@
+{
+  "name": "express-logger",
+  "version": "1.0.0",
+  "description": "A comprehensive logging middleware for Express applications with distributed tracing support",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --coverageThreshold.global.statements=50 --coverageThreshold.global.functions=50 --coverageThreshold.global.lines=50 --coverageThreshold.global.branches=50",
+    "test:ci": "jest --ci --coverage --runInBand",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.js\"",
+    "build": "babel src -d dist",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "express",
+    "logger",
+    "middleware",
+    "pino",
+    "distributed-tracing",
+    "logging"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "pino": "^8.0.0",
+    "pino-pretty": "^10.0.0"
+  },
+  "peerDependencies": {
+    "express": "^4.0.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.0.0",
+    "@babel/core": "^7.0.0",
+    "@babel/preset-env": "^7.0.0",
+    "eslint": "^8.0.0",
+    "express": "^4.18.2",
+    "jest": "^29.0.0",
+    "prettier": "^3.0.0",
+    "supertest": "^6.3.4"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

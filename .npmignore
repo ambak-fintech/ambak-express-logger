@@ -1,0 +1,46 @@
+# Source
+src/
+
+# Tests
+tests/
+coverage/
+jest.config.js
+
+# Config files
+.eslintrc
+.eslintignore
+.prettierrc
+.prettierignore
+.babelrc
+.editorconfig
+.gitignore
+.npmignore
+
+# Examples
+examples/
+
+# Documentation
+docs/
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Environment variables
+.env*
+
+# Git
+.git/
+.gitignore
+
+# CI
+.github/
+.travis.yml
+.gitlab-ci.yml
+
+# Development files
+*.test.js
+*.spec.js
