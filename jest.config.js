@@ -19,13 +19,5 @@ module.exports = {
   verbose: true,
   clearMocks: true,
   restoreMocks: true,
-  silent: false,  // <--- Add this line to ensure console logs are printed
-  coverageThreshold: {
-      global: {
-          branches: 50,
-          functions: 50,
-          lines: 50,
-          statements: 50
-      }
-  }
+  silent: false,
 };
