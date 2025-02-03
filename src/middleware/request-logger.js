@@ -40,7 +40,7 @@ class HttpLogger {
             requestId: context.requestId,
             traceId: context.traceId,
             spanId: context.spanId,
-            service: SERVICE_NAME,
+            service: SERVICE_NAME(),
             ...options.baseLogData
         };
         return { context, baseLogData };

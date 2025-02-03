@@ -95,7 +95,7 @@ module.exports = {
   LOG_LEVEL: getConfigValue('LOG_LEVEL', 'info'),
   LOG_FORMAT: getConfigValue('LOG_FORMAT', 'json'),
   PROJECT_ID: getConfigValue('PROJECT_ID', 'ambak-399309'),
-  SERVICE_NAME: getConfigValue('SERVICE_NAME', 'express-app'),
+  SERVICE_NAME: () => getConfigValue('SERVICE_NAME', 'express-app'),
   LOGGER_NAME: getConfigValue('LOGGER_NAME', 'express-logger'),
   TRACE_HEADER: 'x-cloud-trace-context',
   REQUEST_ID_HEADER: 'x-request-id',

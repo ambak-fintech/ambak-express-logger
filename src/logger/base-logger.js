@@ -24,7 +24,7 @@ const createContextualLogger = (baseLogger) => {
                         requestId: context?.requestId,
                         traceId: context?.traceId,
                         spanId: context?.spanId,
-                        service: SERVICE_NAME
+                        service: SERVICE_NAME(),
                     };
 
                     return target[property](enrichedData);

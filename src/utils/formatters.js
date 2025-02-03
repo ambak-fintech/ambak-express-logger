@@ -101,7 +101,7 @@ const formatJsonLog = (log, options = {}) => {
       ...(includeResource && {
           'logging.googleapis.com/labels': {
               requestId: log.requestId,
-              service: SERVICE_NAME,
+              service: SERVICE_NAME(),
               logName: getCloudLogName(projectId),
           }
       }),
