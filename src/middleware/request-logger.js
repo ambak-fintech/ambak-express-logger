@@ -194,7 +194,7 @@ const createRequestLogger = (options = {}) => {
     const {
         logger = baseLogger,
         excludePaths = [],
-        logResponseBody = false,
+        logResponseBody = true,
         getTargetService,
         baseLogData = {},
         ...otherOptions

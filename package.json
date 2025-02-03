@@ -3,39 +3,35 @@
   "version": "1.0.1",
   "description": "A comprehensive logging middleware for Express applications with distributed tracing support",
   "repository": {
-    "type": "git",
+    "type": "git", 
     "url": "git+https://github.com/ambak-fintech/ambak-express-logger.git"
   },
   "bugs": {
     "url": "https://github.com/ambak-fintech/ambak-express-logger/issues"
   },
   "homepage": "https://github.com/ambak-fintech/ambak-express-logger#readme",
-  "main": "dist/index.js",
-  "module": "dist/index.esm.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "types": "src/index.d.ts",
   "files": [
-    "dist",
+    "src",
     "LICENSE",
     "README.md"
   ],
   "scripts": {
     "test": "jest",
-    "test:watch": "jest --watch",
+    "test:watch": "jest --watch", 
     "test:coverage": "jest --coverage --coverageThreshold.global.statements=40 --coverageThreshold.global.functions=40 --coverageThreshold.global.lines=40 --coverageThreshold.global.branches=40",
     "test:ci": "jest --ci --coverage --runInBand",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.js\"",
-    "build": "babel src -d dist",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm test && npm run lint",
-    "preversion": "npm run lint",
     "version": "npm run format && git add -A src",
     "postversion": "git push && git push --tags"
   },
   "keywords": [
     "express",
     "logger",
-    "middleware",
+    "middleware", 
     "pino",
     "distributed-tracing",
     "logging"
@@ -55,11 +51,8 @@
     "express": "^4.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.0.0",
-    "@babel/core": "^7.0.0",
-    "@babel/preset-env": "^7.0.0",
     "eslint": "^8.0.0",
-    "express": "^4.18.2",
+    "express": "^4.18.2", 
     "jest": "^29.0.0",
     "prettier": "^3.0.0",
     "supertest": "^6.3.4"
@@ -70,4 +63,4 @@
   "publishConfig": {
     "access": "public"
   }
-}
+ }
