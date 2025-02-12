@@ -1,19 +1,18 @@
 // src/utils/console-override.js
 const { logger } = require('../logger');
+const RequestContext = require('../context');
+const { formatJsonLog } = require('./formatters');
+const { SERVICE_NAME } = require('../config/constants');
 
-// Store original console methods
 const originalConsole = {
     log: console.log,
     warn: console.warn,
     error: console.error
 };
 
-/**
- * Format multiple arguments into a single message
- * This handles cases like: console.log('User:', user, 'Action:', action)
- */
 const formatArgs = (...args) => {
-    return args.map(arg => {
+    // Format all arguments into a message string
+    const message = args.map(arg => {
         if (typeof arg === 'object') {
             try {
                 return JSON.stringify(arg);
@@ -23,31 +22,38 @@ const formatArgs = (...args) => {
         }
         return String(arg);
     }).join(' ');
+
+    // Get current request context
+    const context = RequestContext.get();
+    
+    // Create base log object with context
+    const logData = {
+        message,
+        requestId: context?.requestId,
+        traceId: context?.traceId,
+        spanId: context?.spanId,
+        service: SERVICE_NAME(),
+        log_override: true
+    };
+
+    // Format the log object using the same formatter as request logs
+    return formatJsonLog(logData);
 };
 
-/**
- * Override console methods with logger
- */
 const enableConsoleOverride = () => {
-    // Override console.log -> logger.info
     console.log = (...args) => {
         logger.info(formatArgs(...args));
     };
 
-    // Override console.warn -> logger.warn
     console.warn = (...args) => {
         logger.warn(formatArgs(...args));
     };
 
-    // Override console.error -> logger.error
     console.error = (...args) => {
         logger.error(formatArgs(...args));
     };
 };
 
-/**
- * Restore original console methods if needed
- */
 const disableConsoleOverride = () => {
     console.log = originalConsole.log;
     console.warn = originalConsole.warn;

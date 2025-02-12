@@ -1,6 +1,6 @@
 {
   "name": "ambak-express-logger",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A comprehensive logging middleware for Express applications with distributed tracing support",
   "repository": {
     "type": "git", 
