@@ -62,7 +62,7 @@ class HttpLogger {
     static createHttpRequestObject(req, res = null, responseTime = null) {
         const requestObject = {
             requestMethod: req.method,
-            requestUrl: req.originalUrl || req.url,
+            requestUrl: (req.originalUrl || req.url).replace(/\?$/, ''),
             protocol: req.protocol,
             remoteIp: req.ip || req.connection?.remoteAddress,
             requestSize: req.headers['content-length'],
