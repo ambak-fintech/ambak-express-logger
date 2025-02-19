@@ -33,6 +33,7 @@ const formatArgs = (...args) => {
         traceId: context?.traceId,
         spanId: context?.spanId,
         service: SERVICE_NAME(),
+        logSource: 'console',
         log_override: true
     };
 

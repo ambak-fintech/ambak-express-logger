@@ -38,6 +38,7 @@ const createErrorLogger = (options = {}) => {
             spanId: context?.spanId,
             path: req.path,
             method: req.method,
+            logSource: 'exception',
             statusCode: err.status || err.statusCode || 500,
             ...baseLogData
         };
