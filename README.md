@@ -16,19 +16,27 @@ A comprehensive logging middleware for Express applications with distributed tra
 ## Installation
 
 ```bash
-npm install express-logger
+npm install @ambak/express-logger
 ```
 
 ## Quick Start
 
 ```javascript
 const express = require('express');
-const { requestLoggerMiddleware, errorLoggerMiddleware } = require('express-logger');
-
+const { configure } = require('@ambak/express-logger');
+const logger = configure({
+    LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+    SERVICE_NAME: 'SERVICE_NAME',
+    PROJECT_ID: 'PROJECT_ID',
+    LOG_FORMAT: process.env.LOG_FORMAT || 'json',
+    LOGGER_SENSITIVE_FIELDS: process.env.LOGGER_SENSITIVE_FIELDS,
+    LOGGER_SENSITIVE_HEADERS: process.env.LOGGER_SENSITIVE_HEADERS
+});
+logger.enableConsoleOverride();
 const app = express();
 
 // Add request logging middleware
-app.use(requestLoggerMiddleware);
+app.use(logger.requestLoggerMiddleware);
 
 // Your routes here
 app.get('/', (req, res) => {
@@ -37,7 +45,7 @@ app.get('/', (req, res) => {
 });
 
 // Add error logging middleware (should be last)
-app.use(errorLoggerMiddleware);
+app.use(logger.errorLoggerMiddleware);
 
 app.listen(3000, () => {
   logger.info('Server started on port 3000');

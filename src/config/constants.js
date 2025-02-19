@@ -96,10 +96,14 @@ module.exports = {
   LOG_FORMAT: getConfigValue('LOG_FORMAT', 'json'),
   PROJECT_ID: getConfigValue('PROJECT_ID', 'ambak-399309'),
   SERVICE_NAME: () => getConfigValue('SERVICE_NAME', 'express-app'),
-  LOGGER_NAME: getConfigValue('LOGGER_NAME', 'express-logger'),
+  LOGGER_NAME: getConfigValue('LOGGER_NAME', 'api-logger'),
   TRACE_HEADER: 'x-cloud-trace-context',
   REQUEST_ID_HEADER: 'x-request-id',
-  
+  LOGGER_CONSTANTS: {
+    API_LOGGER_NAME: 'api-logger',
+    ERROR_LOGGER_NAME: 'error-logger',
+    CONSOLE_LOGGER_NAME: 'console-logger'
+  },
   getSensitiveFields,
   getSensitiveHeaders,
   setConfigOverrides,

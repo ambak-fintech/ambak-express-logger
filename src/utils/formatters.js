@@ -4,8 +4,21 @@ const {
   PROJECT_ID, 
   LOGGER_NAME, 
   SEVERITY_LEVEL ,
-  SERVICE_NAME
+  SERVICE_NAME,
+  LOGGER_CONSTANTS
 } = require('../config/constants');
+
+
+const getEffectiveLoggerName = (logSource) => {
+    switch (logSource) {
+        case 'exception':
+            return LOGGER_CONSTANTS.ERROR_LOGGER_NAME;
+        case 'console':
+            return LOGGER_CONSTANTS.CONSOLE_LOGGER_NAME;
+        default:
+            return LOGGER_CONSTANTS.API_LOGGER_NAME;
+    }
+};
 
 /**
 * Get cloud logging name
@@ -44,13 +57,13 @@ const formatters = {
 
   bindings: (bindings) => {
       return {
-          pid: bindings.pid,
-          hostname: bindings.hostname,
-          'logging.googleapis.com/logName': getCloudLogName(),
-          resource: {
-              type: 'global',
-              labels: getResourceLabels(),
-          },
+            pid: bindings.pid,
+            hostname: bindings.hostname,
+            // 'logging.googleapis.com/logName': getCloudLogName(),
+            // resource: {
+            //     type: 'global',
+            //     labels: getResourceLabels(),
+            // },
       };
   },
 
@@ -99,11 +112,20 @@ const formatJsonLog = (log, options = {}) => {
       
       // Add resource information if enabled
       ...(includeResource && {
-          'logging.googleapis.com/labels': {
-              requestId: log.requestId,
-              service: SERVICE_NAME(),
-              logName: getCloudLogName(projectId),
-          }
+            'logging.googleapis.com/logName': getCloudLogName(
+                projectId,
+                getEffectiveLoggerName(log.logSource)
+            ),
+            'logging.googleapis.com/labels': {
+                requestId: log.requestId,
+                service: SERVICE_NAME(),
+                logName: getCloudLogName(projectId),
+            },
+            resource: {
+                type: 'global',
+                labels: getResourceLabels(projectId, getEffectiveLoggerName(log.logSource)),
+            },
+
       }),
       
       // Add source location if available

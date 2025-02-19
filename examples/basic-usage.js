@@ -3,7 +3,7 @@ const {
     logger, 
     requestLoggerMiddleware, 
     errorLoggerMiddleware 
-} = require('express-logger');
+} = require('@ambak/express-logger');
 
 const app = express();
 
