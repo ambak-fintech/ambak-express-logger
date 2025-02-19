@@ -1,14 +1,19 @@
 const express = require('express');
-const { 
-    logger, 
-    requestLoggerMiddleware, 
-    errorLoggerMiddleware 
-} = require('@ambak/express-logger');
+const { configure } = require('@ambak/express-logger');
+const logger = configure({
+    LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+    SERVICE_NAME: 'SERVICE_NAME',
+    PROJECT_ID: 'PROJECT_ID',
+    LOG_FORMAT: process.env.LOG_FORMAT || 'json',
+    LOGGER_SENSITIVE_FIELDS: process.env.LOGGER_SENSITIVE_FIELDS,
+    LOGGER_SENSITIVE_HEADERS: process.env.LOGGER_SENSITIVE_HEADERS
+});
+logger.enableConsoleOverride();
 
 const app = express();
 
 // Add request logging middleware
-app.use(requestLoggerMiddleware);
+app.use(logger.requestLoggerMiddleware);
 
 // Example route that uses the logger
 app.get('/', (req, res) => {
@@ -30,7 +35,7 @@ app.get('/error', () => {
 });
 
 // Add error logging middleware (should be after routes)
-app.use(errorLoggerMiddleware);
+app.use(logger.errorLoggerMiddleware);
 
 // Use the base logger for application-level logs
 logger.info('Server starting...');
