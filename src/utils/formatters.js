@@ -5,7 +5,8 @@ const {
   LOGGER_NAME, 
   SEVERITY_LEVEL ,
   SERVICE_NAME,
-  LOGGER_CONSTANTS
+  LOGGER_CONSTANTS,
+  getConfigValue
 } = require('../config/constants');
 const { formatAwsLog } = require('./aws-formatter');
 
@@ -69,7 +70,6 @@ const formatters = {
   },
 
   log: (object) => {
-      const { getConfigValue } = require('../config/constants');
       const logType = getConfigValue('LOG_TYPE', 'gcp');
       
       if (logType === 'aws' || object._awsFormat === true) {
@@ -90,7 +90,6 @@ const formatters = {
 * @returns {boolean}
 */
 const isJsonFormat = () => {
-  const { getConfigValue } = require('../config/constants');
   return getConfigValue('LOG_FORMAT', 'json') === 'json';
 };
 
@@ -103,7 +102,6 @@ const isJsonFormat = () => {
 const formatJsonLog = (log, options = {}) => {
   if (!log) return log;
   
-  const { getConfigValue } = require('../config/constants');
   const logType = options.LOG_TYPE || getConfigValue('LOG_TYPE', 'gcp');
   
   if (logType === 'aws') {
