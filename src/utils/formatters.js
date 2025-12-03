@@ -7,6 +7,7 @@ const {
   SERVICE_NAME,
   LOGGER_CONSTANTS
 } = require('../config/constants');
+const { formatAwsLog } = require('./aws-formatter');
 
 
 const getEffectiveLoggerName = (logSource) => {
@@ -68,7 +69,13 @@ const formatters = {
   },
 
   log: (object) => {
-      // Remove unnecessary fields that are handled elsewhere
+      const { getConfigValue } = require('../config/constants');
+      const logType = getConfigValue('LOG_TYPE', 'gcp');
+      
+      if (logType === 'aws' || object._awsFormat === true) {
+          return formatAwsLog(object);
+      }
+      
       const {
           pid, hostname, level, time, msg, 
           severity, requestId, service, ...rest
@@ -82,7 +89,10 @@ const formatters = {
 * Check if JSON format is enabled
 * @returns {boolean}
 */
-const isJsonFormat = () => LOG_FORMAT === 'json';
+const isJsonFormat = () => {
+  const { getConfigValue } = require('../config/constants');
+  return getConfigValue('LOG_FORMAT', 'json') === 'json';
+};
 
 /**
 * Format log entry for cloud logging
@@ -92,6 +102,13 @@ const isJsonFormat = () => LOG_FORMAT === 'json';
 */
 const formatJsonLog = (log, options = {}) => {
   if (!log) return log;
+  
+  const { getConfigValue } = require('../config/constants');
+  const logType = options.LOG_TYPE || getConfigValue('LOG_TYPE', 'gcp');
+  
+  if (logType === 'aws') {
+    return formatAwsLog(log);
+  }
   
   const {
       projectId = PROJECT_ID,

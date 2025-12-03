@@ -107,6 +107,7 @@ module.exports = {
   getSensitiveFields,
   getSensitiveHeaders,
   setConfigOverrides,
+  getConfigValue,
   
   EXCLUDED_PATHS,
   shouldExcludePath,
