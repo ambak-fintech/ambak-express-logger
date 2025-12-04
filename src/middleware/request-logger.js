@@ -48,6 +48,7 @@ class HttpLogger {
 
     static createRequestLog(req, baseLogData, options = {}) {
         const serializedReq = serializers.req(req);
+        const { getConfigValue } = require('../config/constants');
 
         return formatJsonLog({
             ...baseLogData,
@@ -55,7 +56,8 @@ class HttpLogger {
             ...serializedReq,
             target_service: options.getTargetService?.(req) || 
                           req.path.split('/')[1] || 'unknown',
-            httpRequest: this.createHttpRequestObject(req)
+            httpRequest: this.createHttpRequestObject(req),
+            LOG_TYPE: baseLogData.LOG_TYPE || getConfigValue('LOG_TYPE', 'gcp')
         });
     }
 
@@ -91,6 +93,8 @@ class HttpLogger {
     }
 
     static createResponseLog(req, res, responseTime, baseLogData, responseBody, options = {}) {
+        const { getConfigValue } = require('../config/constants');
+        
         return formatJsonLog({
             ...baseLogData,
             type: 'response',
@@ -101,7 +105,8 @@ class HttpLogger {
                 body: responseBody && options.logResponseBody ? 
                       sanitizeBody(responseBody.toString('utf8')) : undefined,
             },
-            httpRequest: this.createHttpRequestObject(req, res, responseTime)
+            httpRequest: this.createHttpRequestObject(req, res, responseTime),
+            LOG_TYPE: baseLogData.LOG_TYPE || getConfigValue('LOG_TYPE', 'gcp')
         });
     }
 

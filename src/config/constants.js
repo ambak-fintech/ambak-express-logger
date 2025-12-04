@@ -104,6 +104,7 @@ module.exports = {
     ERROR_LOGGER_NAME: 'error-logger',
     CONSOLE_LOGGER_NAME: 'console-logger'
   },
+  getConfigValue,
   getSensitiveFields,
   getSensitiveHeaders,
   setConfigOverrides,
