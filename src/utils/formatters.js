@@ -86,14 +86,11 @@ const formatters = {
       const logType = object.LOG_TYPE || object.logType || getConfigValue('LOG_TYPE', 'gcp');
       
       if (logType === 'aws') {
-          // Remove fields that Pino adds but we don't want in AWS format
-          // Note: traceId and spanId are kept - they will be replaced with AWS format in formatAwsLog
           const cleaned = { ...object };
           delete cleaned.time;
           return cleaned;
       }
       
-      // For GCP, remove unnecessary fields that are handled elsewhere
       const {
           pid, hostname, level, time, msg, 
           severity, requestId, service, ...rest
@@ -118,15 +115,12 @@ const isJsonFormat = () => LOG_FORMAT === 'json';
 const formatJsonLog = (log, options = {}) => {
   if (!log) return log;
   
-  // Check LOG_TYPE environment variable or from log object
   const logType = log.LOG_TYPE || log.logType || getConfigValue('LOG_TYPE', 'gcp');
   
-  // If LOG_TYPE is 'aws', use AWS formatter
   if (logType === 'aws') {
       return formatAwsLog(log);
   }
   
-  // Otherwise, use GCP formatter (default)
   const {
       projectId = PROJECT_ID,
       includeResource = true,

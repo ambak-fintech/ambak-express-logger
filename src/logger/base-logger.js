@@ -25,7 +25,7 @@ const createContextualLogger = (baseLogger) => {
                         traceId: context?.traceId,
                         spanId: context?.spanId,
                         service: SERVICE_NAME(),
-                        LOG_TYPE: logData.LOG_TYPE || require('../config/constants').getConfigValue('LOG_TYPE', 'gcp')
+                        LOG_TYPE: logData.LOG_TYPE || getConfigValue('LOG_TYPE', 'gcp')
                     };
 
                     return target[property](enrichedData);

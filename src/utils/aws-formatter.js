@@ -1,44 +1,34 @@
-/**
- * Convert trace ID to AWS X-Ray format: 1-{timestamp}-{traceId} (without Root=)
- */
+const { SEVERITY_LEVEL, SERVICE_NAME } = require('../config/constants');
+const { getConfigValue } = require('../config/constants');
 const convertToAwsXRayTraceId = (traceId, timestamp = null) => {
     if (!traceId) return null;
     
-    // If already in 1-{hex}-{hex} format, return as is
     if (typeof traceId === 'string' && /^1-[0-9a-f]{8}-[0-9a-f]{24}$/i.test(traceId)) {
         return traceId;
     }
     
-    // If in Root= format, extract the trace ID part
     if (typeof traceId === 'string' && traceId.startsWith('Root=')) {
         return traceId.replace('Root=', '');
     }
     
-    // Get timestamp (Unix epoch in seconds)
     const epochSeconds = timestamp 
         ? Math.floor(new Date(timestamp).getTime() / 1000)
         : Math.floor(Date.now() / 1000);
     
-    // Convert to 8-char hex (lowercase)
     const hexTimestamp = epochSeconds.toString(16).padStart(8, '0').toLowerCase();
     
-    // Extract first 24 chars of traceId (AWS X-Ray uses 96-bit = 24 hex chars)
     const traceIdStr = typeof traceId === 'string' ? traceId : traceId.toString(16);
     const traceIdHex = traceIdStr.replace(/[^0-9a-f]/gi, '').slice(0, 24).padStart(24, '0').toLowerCase();
     
     return `1-${hexTimestamp}-${traceIdHex}`;
 };
 
-/**
- * Generate X-Amzn-Trace-Id header value
- */
 const generateXAmznTraceId = (traceId, spanId, sampled = true) => {
     if (!traceId) return null;
     
     const awsTraceId = convertToAwsXRayTraceId(traceId);
     if (!awsTraceId) return null;
     
-    // Format spanId to 16-char hex (lowercase)
     const spanIdHex = spanId 
         ? spanId.replace(/[^0-9a-f]/gi, '').slice(0, 16).padStart(16, '0').toLowerCase()
         : null;
@@ -57,17 +47,12 @@ const formatAwsLog = (object) => {
         return object;
     }
 
-    // Check LOG_TYPE environment variable or from object
-    const { getConfigValue } = require('../config/constants');
     const logType = object.LOG_TYPE || object.logType || getConfigValue('LOG_TYPE', 'gcp');
     
-    // If LOG_TYPE is not 'aws', return object as-is (for GCP or other types)
     if (logType !== 'aws') {
         return object;
     }
 
-    // Import SEVERITY_LEVEL for severity mapping
-    const { SEVERITY_LEVEL, SERVICE_NAME } = require('../config/constants');
 
     const {
         pid, hostname, level, levelNumber, time, timestamp,
@@ -79,20 +64,17 @@ const formatAwsLog = (object) => {
         ...rest
     } = object;
     
-    // Map numeric levels to severity strings
     const levelToSeverity = {
-        10: 'DEBUG',  // trace
-        20: 'DEBUG',  // debug
-        30: 'INFO',   // info
-        40: 'WARNING', // warn
-        50: 'ERROR',   // error
-        60: 'CRITICAL' // fatal
+        10: 'DEBUG',  
+        20: 'DEBUG',  
+        30: 'INFO',   
+        40: 'WARNING', 
+        50: 'ERROR',   
+        60: 'CRITICAL' 
     };
-    
-    // Build result object with only expected fields in correct order
+
     const result = {};
     
-    // 1. severity (required)
     if (severity) {
         result.severity = severity;
     } else if (level !== undefined) {
@@ -101,53 +83,43 @@ const formatAwsLog = (object) => {
         result.severity = 'INFO';
     }
     
-    // 2. level
     if (level !== undefined) {
         result.level = level;
     }
     
-    // 3. timestamp
     result.timestamp = timestamp || time || new Date().toISOString();
     
-    // 4. type
     if (type) {
         result.type = type;
     }
     
-    // 5. service
     if (service) {
         result.service = service;
     }
     
-    // 6. pid
     if (pid !== undefined) {
         result.pid = pid;
     }
     
-    // 7. hostname
     if (hostname) {
         result.hostname = hostname;
     }
     
-    // 8. requestId
     if (requestId) {
         result.requestId = requestId;
     }
     
-    // 9. traceId (convert to AWS X-Ray format and replace original)
     if (traceId) {
         const awsTraceId = convertToAwsXRayTraceId(traceId, result.timestamp);
         result.traceId = awsTraceId; // Replace traceId with AWS format
-        result['x-amzn-trace-id'] = generateXAmznTraceId(traceId, spanId);
+        result['x-amzn-trace-id'] = generateXAmznTraceId(awsTraceId, spanId);
         result.sampled = true;
     }
     
-    // 10. spanId (format to 16-char hex and replace original)
     if (spanId) {
         result.spanId = spanId.replace(/[^0-9a-f]/gi, '').slice(0, 16).padStart(16, '0').toLowerCase();
     }
     
-    // 11. Request fields at root level
     const requestMethod = method || httpRequest?.requestMethod;
     const requestUrl = url || path || httpRequest?.requestUrl;
     const requestPath = path || (httpRequest?.requestUrl ? (() => {
@@ -172,28 +144,23 @@ const formatAwsLog = (object) => {
     if (requestPayload) result.request_payload = requestPayload;
     if (target_service) result.target_service = target_service;
     
-    // 12. response (if present)
     if (response) {
         result.response = response;
     }
     
-    // 13. AWS CloudWatch structure with snake_case
-    const serviceName = service || SERVICE_NAME();
+    const serviceName = service;
     result.aws = {
         cloudwatch: {
             log_group: `/aws/service/${serviceName}`,
             log_stream: instance || 'instance-1',
-            region: region || process.env.AWS_REGION || 'ap-south-1',
-            account_id: account_id || process.env.AWS_ACCOUNT_ID || '123456789012'
+            region: region || process.env.AWS_REGION,
+            account_id: account_id || process.env.AWS_ACCOUNT_ID
         }
     };
     
-    // Only add other fields that are explicitly allowed (like response body, etc.)
-    // But exclude all GCP fields and unwanted fields
-    const allowedExtraFields = ['response']; // Add any other allowed fields here
+    const allowedExtraFields = ['response'];
     
     Object.keys(rest).forEach(key => {
-        // Skip GCP fields, internal fields, and fields we've already handled
         if (!key.startsWith('logging.googleapis.com/') &&
             key !== 'resource' &&
             key !== 'levelNumber' &&
@@ -208,9 +175,6 @@ const formatAwsLog = (object) => {
         }
     });
     
-    // Final cleanup - explicitly remove all GCP fields and unwanted fields that might have been added
-    // Do this multiple times to catch fields added at different stages
-    // Note: traceId and spanId are NOT removed - they're replaced with AWS format values
     const fieldsToRemove = [
         'time',
         'logging.googleapis.com/logName',
@@ -228,24 +192,12 @@ const formatAwsLog = (object) => {
         'logType'
     ];
     
-    // Remove fields multiple times to ensure they're gone
-    for (let i = 0; i < 3; i++) {
-        fieldsToRemove.forEach(field => {
-            if (result.hasOwnProperty(field)) {
-                delete result[field];
-            }
-        });
-    }
-    
-    // Also remove any fields that start with 'logging.googleapis.com/'
     Object.keys(result).forEach(key => {
         if (key.startsWith('logging.googleapis.com/')) {
             delete result[key];
         }
     });
     
-    // Final pass - remove time one more time (in case it was added back)
-    // Note: traceId and spanId are kept - they contain AWS format values
     delete result.time;
     
     return result;
