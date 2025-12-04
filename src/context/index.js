@@ -31,9 +31,14 @@ class RequestContext {
         const context = new RequestContext();
         const { getConfigValue } = require('../config/constants');
     
-        // Generate or get request ID
-        context.requestId = req.headers['x-request-id'] || 
-                          crypto.randomBytes(16).toString('hex').slice(0, 8);
+        // Generate request ID - always use short 8-character format for consistency
+        // If x-request-id header exists, use it only if it's already 8 chars, otherwise generate new one
+        const incomingRequestId = req.headers['x-request-id'];
+        if (incomingRequestId && typeof incomingRequestId === 'string' && incomingRequestId.length === 8 && /^[0-9a-f]{8}$/i.test(incomingRequestId)) {
+            context.requestId = incomingRequestId.toLowerCase();
+        } else {
+            context.requestId = crypto.randomBytes(16).toString('hex').slice(0, 8);
+        }
     
         // Check LOG_TYPE to determine which trace format to use
         const logType = getConfigValue('LOG_TYPE', 'gcp');
