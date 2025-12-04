@@ -1,7 +1,7 @@
 //src/logger/base-logger.js
 const pino = require('pino');
 const RequestContext = require('../context');
-const { LOG_LEVELS, LOG_LEVEL, SERVICE_NAME } = require('../config/constants');
+const { LOG_LEVELS, LOG_LEVEL, SERVICE_NAME, getConfigValue } = require('../config/constants');
 const transport = require('./transport');
 const { formatters } = require('../utils/formatters');
 const { serializers } = require('../utils/serializers');

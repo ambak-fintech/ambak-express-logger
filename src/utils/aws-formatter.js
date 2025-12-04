@@ -26,7 +26,10 @@ const convertToAwsXRayTraceId = (traceId, timestamp = null) => {
 const generateXAmznTraceId = (traceId, spanId, sampled = true) => {
     if (!traceId) return null;
     
-    const awsTraceId = convertToAwsXRayTraceId(traceId);
+    const awsTraceId = (typeof traceId === 'string' && /^1-[0-9a-f]{8}-[0-9a-f]{24}$/i.test(traceId))
+        ? traceId
+        : convertToAwsXRayTraceId(traceId);
+    
     if (!awsTraceId) return null;
     
     const spanIdHex = spanId 

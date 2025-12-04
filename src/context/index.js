@@ -29,17 +29,30 @@ class RequestContext {
      */
     static create(req) {
         const context = new RequestContext();
+        const { getConfigValue } = require('../config/constants');
     
         // Generate or get request ID
         context.requestId = req.headers['x-request-id'] || 
                           crypto.randomBytes(16).toString('hex').slice(0, 8);
     
-        // Try Cloud Trace first, then W3C trace context
+        // Check LOG_TYPE to determine which trace format to use
+        const logType = getConfigValue('LOG_TYPE', 'gcp');
+        
+        // Try AWS X-Amzn-Trace-Id first if LOG_TYPE is 'aws'
         let traceContext;
-        if (req.headers['x-cloud-trace-context']) {
+        if (logType === 'aws') {
+            if (req.headers['x-amzn-trace-id']) {
+                traceContext = TraceContext.parseAwsTraceId(req.headers['x-amzn-trace-id']);
+            } else {
+                // Generate new AWS-formatted trace ID if no header present
+                traceContext = TraceContext.generateNew(true);
+            }
+        } else if (req.headers['x-cloud-trace-context']) {
             traceContext = TraceContext.parseCloudTrace(req.headers['x-cloud-trace-context']);
-        } else {
+        } else if (req.headers.traceparent) {
             traceContext = TraceContext.parseTraceParent(req.headers.traceparent);
+        } else {
+            traceContext = TraceContext.generateNew(false);
         }
     
         // Parse tracestate if present
