@@ -5,7 +5,7 @@ const RequestContext = require('../context');
 const { serializers } = require('../utils/serializers');
 const { sanitizeHeaders, sanitizeBody } = require('../utils/sanitizers');
 const { formatJsonLog } = require('../utils/formatters');
-const { shouldExcludePath, SERVICE_NAME } = require('../config/constants');
+const { shouldExcludePath, SERVICE_NAME, getConfigValue } = require('../config/constants');
 
 class RequestMetrics {
     constructor(startTime) {
@@ -113,14 +113,20 @@ class HttpLogger {
     static setTraceHeaders(res, context) {
         if (!context.traceContext) return;
 
-        const headers = {
-            traceparent: context.traceContext.toTraceParent(),
-            'x-cloud-trace-context': context.traceContext.toCloudTrace()
-        };
+        const logType = getConfigValue('LOG_TYPE', 'gcp');
 
-        const tracestate = context.traceContext.toTraceState();
-        if (tracestate) {
-            headers.tracestate = tracestate;
+        const headers = {};
+
+        if (logType === 'aws') {
+            headers['x-amzn-trace-id'] = context.traceContext.toAwsTraceId();
+        } else {
+            headers.traceparent = context.traceContext.toTraceParent();
+            headers['x-cloud-trace-context'] = context.traceContext.toCloudTrace();
+
+            const tracestate = context.traceContext.toTraceState();
+            if (tracestate) {
+                headers.tracestate = tracestate;
+            }
         }
 
         Object.entries(headers).forEach(([key, value]) => {
@@ -220,6 +226,23 @@ const createRequestLogger = (options = {}) => {
                 // Attach logger to request
                 req.log = logger.child(contextLogData);
 
+                // Add trace headers to request for forwarding to downstream services
+                if (context.traceContext) {
+                    const logType = getConfigValue('LOG_TYPE', 'gcp');
+
+                    if (logType === 'aws') {
+                        req.headers['x-amzn-trace-id'] = context.traceContext.toAwsTraceId();
+                    } else {
+                        req.headers.traceparent = context.traceContext.toTraceParent();
+                        req.headers['x-cloud-trace-context'] = context.traceContext.toCloudTrace();
+
+                        const tracestate = context.traceContext.toTraceState();
+                        if (tracestate) {
+                            req.headers.tracestate = tracestate;
+                        }
+                    }
+                }
+
                 // Log initial request
                 const requestLog = HttpLogger.createRequestLog(req, contextLogData, {
                     getTargetService,
@@ -227,7 +250,7 @@ const createRequestLogger = (options = {}) => {
                 });
                 req.log.info(requestLog);
 
-                // Set trace headers
+                // Set trace headers on response
                 HttpLogger.setTraceHeaders(res, context);
 
                 // Setup response interceptor

@@ -87,15 +87,22 @@ class RequestContext {
      * @returns {object}
      */
     addTraceHeaders(headers = {}) {
-        if (this.traceContext) {
-            headers.traceparent = this.traceContext.toTraceParent();
-            
-            const tracestate = this.traceContext.toTraceState();
-            if (tracestate) {
-                headers.tracestate = tracestate;
-            }
+        const { getConfigValue } = require('../config/constants');
+        const logType = getConfigValue('LOG_TYPE', 'gcp');
 
-            headers['x-cloud-trace-context'] = this.traceContext.toCloudTrace();
+        if (this.traceContext) {
+            if (logType === 'aws') {
+                headers['x-amzn-trace-id'] = this.traceContext.toAwsTraceId();
+            } else {
+                headers.traceparent = this.traceContext.toTraceParent();
+
+                const tracestate = this.traceContext.toTraceState();
+                if (tracestate) {
+                    headers.tracestate = tracestate;
+                }
+
+                headers['x-cloud-trace-context'] = this.traceContext.toCloudTrace();
+            }
         }
 
         headers['x-request-id'] = this.requestId;

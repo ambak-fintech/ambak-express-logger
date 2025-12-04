@@ -118,7 +118,7 @@ class TraceContext {
         const context = new TraceContext();
         
         if (!header) {
-            return TraceContext.generateNew();
+            return TraceContext.generateNew(true);
         }
 
         try {
@@ -145,7 +145,7 @@ class TraceContext {
             }
 
             if (!rootPart) {
-                return TraceContext.generateNew();
+                return TraceContext.generateNew(true);
             }
 
             // Extract trace ID from Root format: 1-{timestamp}-{traceId}
@@ -172,7 +172,7 @@ class TraceContext {
 
             return context;
         } catch (error) {
-            return TraceContext.generateNew();
+            return TraceContext.generateNew(true);
         }
     }
 
@@ -222,6 +222,30 @@ class TraceContext {
     toCloudTrace() {
         const isTraced = this.traceFlags === '01';
         return `${this.traceId}/${this.spanId};o=${isTraced ? '1' : '0'}`;
+    }
+
+    /**
+     * Convert to AWS X-Amzn-Trace-Id format
+     * @returns {string}
+     */
+    toAwsTraceId() {
+        // If traceId is already in AWS format (1-{timestamp}-{traceId}), use it directly
+        if (typeof this.traceId === 'string' && /^1-[0-9a-f]{8}-[0-9a-f]{24}$/i.test(this.traceId)) {
+            const spanIdHex = this.spanId.replace(/[^0-9a-f]/gi, '').slice(0, 16).padStart(16, '0').toLowerCase();
+            const sampled = this.traceFlags === '01' ? '1' : '0';
+            return `Root=${this.traceId};Parent=${spanIdHex};Sampled=${sampled}`;
+        }
+
+        // Convert standard trace ID to AWS format
+        const epochSeconds = Math.floor(Date.now() / 1000);
+        const hexTimestamp = epochSeconds.toString(16).padStart(8, '0').toLowerCase();
+        const traceIdHex = this.traceId.replace(/[^0-9a-f]/gi, '').slice(0, 24).padStart(24, '0').toLowerCase();
+        const awsTraceId = `1-${hexTimestamp}-${traceIdHex}`;
+
+        const spanIdHex = this.spanId.replace(/[^0-9a-f]/gi, '').slice(0, 16).padStart(16, '0').toLowerCase();
+        const sampled = this.traceFlags === '01' ? '1' : '0';
+
+        return `Root=${awsTraceId};Parent=${spanIdHex};Sampled=${sampled}`;
     }
 
     /**
