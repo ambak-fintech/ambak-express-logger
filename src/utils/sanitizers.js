@@ -88,6 +88,27 @@ function sanitizeValue(key, value, sensitiveFields) {
 }
 
 /**
+ * Try to parse a JSON string, return null if not valid JSON
+ * @param {string} str - String to parse
+ * @returns {object|null} - Parsed object or null
+ */
+function tryParseJson(str) {
+    if (typeof str !== 'string') return null;
+    
+    const trimmed = str.trim();
+    // Quick check if it looks like JSON (starts with { or [)
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+        return null;
+    }
+    
+    try {
+        return JSON.parse(trimmed);
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
  * Recursively sanitize an object or array
  * @param {object|array} obj - The object or array to sanitize
  * @param {Set} sensitiveFields - Set of sensitive field names
@@ -95,6 +116,17 @@ function sanitizeValue(key, value, sensitiveFields) {
  * @returns {object|array} - Sanitized object or array
  */
 function sanitizeBody(obj, sensitiveFields = getSensitiveFields(), depth = 0) {
+    // If it's a string, try to parse it as JSON first
+    if (typeof obj === 'string') {
+        const parsed = tryParseJson(obj);
+        if (parsed !== null) {
+            // Successfully parsed, now sanitize the parsed object
+            return sanitizeBody(parsed, sensitiveFields, depth);
+        }
+        // Not a JSON string, return as-is
+        return obj;
+    }
+
     if (!obj || typeof obj !== 'object') {
         return obj;
     }
@@ -143,5 +175,6 @@ module.exports = {
     sanitizeBody,
     sanitizeHeaders,
     sanitizeImageData,
+    tryParseJson,
     PATTERNS
 };
