@@ -1,5 +1,6 @@
 const { SEVERITY_LEVEL, SERVICE_NAME } = require('../config/constants');
 const { getConfigValue } = require('../config/constants');
+const { randomBytes } = require('crypto');
 const convertToAwsXRayTraceId = (traceId, timestamp = null) => {
     if (!traceId) return null;
     
@@ -108,8 +109,13 @@ const formatAwsLog = (object) => {
         result.hostname = hostname;
     }
     
-    if (requestId) {
-        result.requestId = requestId;
+    const finalRequestId = requestId || rest?.requestId || object.requestId;
+    result.requestId = (finalRequestId && finalRequestId !== '' && finalRequestId !== null && finalRequestId !== undefined) 
+        ? finalRequestId 
+        : randomBytes(16).toString('hex').slice(0, 8);
+    
+    if (rest && rest.requestId) {
+        delete rest.requestId;
     }
     
     if (traceId) {
@@ -177,23 +183,6 @@ const formatAwsLog = (object) => {
             result[key] = rest[key];
         }
     });
-    
-    const fieldsToRemove = [
-        'time',
-        'logging.googleapis.com/logName',
-        'logging.googleapis.com/trace',
-        'logging.googleapis.com/spanId',
-        'logging.googleapis.com/labels',
-        'logging.googleapis.com/sourceLocation',
-        'logging.googleapis.com/operation',
-        'logging.googleapis.com/httpRequest',
-        'resource',
-        'levelNumber',
-        'msg',
-        'httpRequest',
-        'LOG_TYPE',
-        'logType'
-    ];
     
     Object.keys(result).forEach(key => {
         if (key.startsWith('logging.googleapis.com/')) {
