@@ -29,17 +29,35 @@ class RequestContext {
      */
     static create(req) {
         const context = new RequestContext();
+        const { getConfigValue } = require('../config/constants');
     
-        // Generate or get request ID
-        context.requestId = req.headers['x-request-id'] || 
-                          crypto.randomBytes(16).toString('hex').slice(0, 8);
-    
-        // Try Cloud Trace first, then W3C trace context
-        let traceContext;
-        if (req.headers['x-cloud-trace-context']) {
-            traceContext = TraceContext.parseCloudTrace(req.headers['x-cloud-trace-context']);
+        // Generate request ID - always use short 8-character format for consistency
+        // If x-request-id header exists, use it only if it's already 8 chars, otherwise generate new one
+        const incomingRequestId = req.headers['x-request-id'];
+        if (incomingRequestId && typeof incomingRequestId === 'string' && incomingRequestId.length === 8 && /^[0-9a-f]{8}$/i.test(incomingRequestId)) {
+            context.requestId = incomingRequestId.toLowerCase();
         } else {
+            context.requestId = crypto.randomBytes(16).toString('hex').slice(0, 8);
+        }
+    
+        // Check LOG_TYPE to determine which trace format to use
+        const logType = getConfigValue('LOG_TYPE', 'gcp');
+        
+        // Try AWS X-Amzn-Trace-Id first if LOG_TYPE is 'aws'
+        let traceContext;
+        if (logType === 'aws') {
+            if (req.headers['x-amzn-trace-id']) {
+                traceContext = TraceContext.parseAwsTraceId(req.headers['x-amzn-trace-id']);
+            } else {
+                // Generate new AWS-formatted trace ID if no header present
+                traceContext = TraceContext.generateNew(true);
+            }
+        } else if (req.headers['x-cloud-trace-context']) {
+            traceContext = TraceContext.parseCloudTrace(req.headers['x-cloud-trace-context']);
+        } else if (req.headers.traceparent) {
             traceContext = TraceContext.parseTraceParent(req.headers.traceparent);
+        } else {
+            traceContext = TraceContext.generateNew(false);
         }
     
         // Parse tracestate if present
@@ -74,15 +92,22 @@ class RequestContext {
      * @returns {object}
      */
     addTraceHeaders(headers = {}) {
-        if (this.traceContext) {
-            headers.traceparent = this.traceContext.toTraceParent();
-            
-            const tracestate = this.traceContext.toTraceState();
-            if (tracestate) {
-                headers.tracestate = tracestate;
-            }
+        const { getConfigValue } = require('../config/constants');
+        const logType = getConfigValue('LOG_TYPE', 'gcp');
 
-            headers['x-cloud-trace-context'] = this.traceContext.toCloudTrace();
+        if (this.traceContext) {
+            if (logType === 'aws') {
+                headers['x-amzn-trace-id'] = this.traceContext.toAwsTraceId();
+            } else {
+                headers.traceparent = this.traceContext.toTraceParent();
+
+                const tracestate = this.traceContext.toTraceState();
+                if (tracestate) {
+                    headers.tracestate = tracestate;
+                }
+
+                headers['x-cloud-trace-context'] = this.traceContext.toCloudTrace();
+            }
         }
 
         headers['x-request-id'] = this.requestId;

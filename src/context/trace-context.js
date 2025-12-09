@@ -16,11 +16,23 @@ class TraceContext {
 
     /**
      * Generate a new trace context
+     * @param {boolean} awsFormat - If true, generate trace ID in AWS X-Ray format
      * @returns {TraceContext}
      */
-    static generateNew() {
+    static generateNew(awsFormat = false) {
         const context = new TraceContext();
-        context.traceId = crypto.randomBytes(16).toString('hex');
+        
+        if (awsFormat) {
+            // Generate AWS X-Ray format: 1-{timestamp}-{traceId}
+            const epochSeconds = Math.floor(Date.now() / 1000);
+            const hexTimestamp = epochSeconds.toString(16).padStart(8, '0').toLowerCase();
+            const traceIdHex = crypto.randomBytes(12).toString('hex').toLowerCase(); // 24 hex chars
+            context.traceId = `1-${hexTimestamp}-${traceIdHex}`;
+        } else {
+            // Generate standard W3C format (32 hex chars)
+            context.traceId = crypto.randomBytes(16).toString('hex');
+        }
+        
         context.spanId = crypto.randomBytes(8).toString('hex');
         return context;
     }
@@ -98,6 +110,73 @@ class TraceContext {
     }
 
     /**
+     * Parse AWS X-Amzn-Trace-Id header
+     * @param {string} header - x-amzn-trace-id header value
+     * @returns {TraceContext}
+     */
+    static parseAwsTraceId(header) {
+        const context = new TraceContext();
+        
+        if (!header) {
+            return TraceContext.generateNew(true);
+        }
+
+        try {
+            // Format: Root=1-{timestamp}-{traceId};Parent={spanId};Sampled={0|1}
+            // Example: Root=1-69313ce7-190b8f6099d578eaf1f561bc;Parent=745315306bfc9ca3;Sampled=1
+            
+            // Remove quotes if present
+            header = header.replace(/^["']|["']$/g, '');
+            
+            const parts = header.split(';');
+            let rootPart = '';
+            let parentPart = '';
+            let sampled = '1';
+
+            for (const part of parts) {
+                const trimmed = part.trim();
+                if (trimmed.startsWith('Root=')) {
+                    rootPart = trimmed.substring(5); // Remove 'Root='
+                } else if (trimmed.startsWith('Parent=')) {
+                    parentPart = trimmed.substring(7); // Remove 'Parent='
+                } else if (trimmed.startsWith('Sampled=')) {
+                    sampled = trimmed.substring(8); // Remove 'Sampled='
+                }
+            }
+
+            if (!rootPart) {
+                return TraceContext.generateNew(true);
+            }
+
+            // Extract trace ID from Root format: 1-{timestamp}-{traceId}
+            // The trace ID is the last 24 hex chars after the second dash
+            const rootParts = rootPart.split('-');
+            if (rootParts.length >= 3) {
+                // Full AWS trace ID format: 1-{timestamp}-{traceId}
+                // Store the full AWS format as traceId
+                context.traceId = rootPart; // Keep as 1-{timestamp}-{traceId} format
+            } else {
+                // Fallback: use the rootPart as-is
+                context.traceId = rootPart;
+            }
+
+            // Extract span ID from Parent
+            if (parentPart) {
+                // AWS span ID is 16 hex chars, convert to our format (8 bytes = 16 hex)
+                context.spanId = parentPart.replace(/[^0-9a-f]/gi, '').slice(0, 16).padStart(16, '0').toLowerCase();
+            } else {
+                context.spanId = crypto.randomBytes(8).toString('hex');
+            }
+
+            context.traceFlags = (sampled === '0' ? '00' : '01');
+
+            return context;
+        } catch (error) {
+            return TraceContext.generateNew(true);
+        }
+    }
+
+    /**
      * Parse tracestate header
      * @param {string} header - tracestate header value
      */
@@ -143,6 +222,30 @@ class TraceContext {
     toCloudTrace() {
         const isTraced = this.traceFlags === '01';
         return `${this.traceId}/${this.spanId};o=${isTraced ? '1' : '0'}`;
+    }
+
+    /**
+     * Convert to AWS X-Amzn-Trace-Id format
+     * @returns {string}
+     */
+    toAwsTraceId() {
+        // If traceId is already in AWS format (1-{timestamp}-{traceId}), use it directly
+        if (typeof this.traceId === 'string' && /^1-[0-9a-f]{8}-[0-9a-f]{24}$/i.test(this.traceId)) {
+            const spanIdHex = this.spanId.replace(/[^0-9a-f]/gi, '').slice(0, 16).padStart(16, '0').toLowerCase();
+            const sampled = this.traceFlags === '01' ? '1' : '0';
+            return `Root=${this.traceId};Parent=${spanIdHex};Sampled=${sampled}`;
+        }
+
+        // Convert standard trace ID to AWS format
+        const epochSeconds = Math.floor(Date.now() / 1000);
+        const hexTimestamp = epochSeconds.toString(16).padStart(8, '0').toLowerCase();
+        const traceIdHex = this.traceId.replace(/[^0-9a-f]/gi, '').slice(0, 24).padStart(24, '0').toLowerCase();
+        const awsTraceId = `1-${hexTimestamp}-${traceIdHex}`;
+
+        const spanIdHex = this.spanId.replace(/[^0-9a-f]/gi, '').slice(0, 16).padStart(16, '0').toLowerCase();
+        const sampled = this.traceFlags === '01' ? '1' : '0';
+
+        return `Root=${awsTraceId};Parent=${spanIdHex};Sampled=${sampled}`;
     }
 
     /**
