@@ -120,13 +120,16 @@ class RequestContext {
      * @returns {RequestContext}
      */
     createChildContext() {
+        const { getConfigValue } = require('../config/constants');
+        const logType = getConfigValue('LOG_TYPE', 'gcp');
+        
         const childContext = new RequestContext();
         childContext.requestId = this.requestId;
         
         if (this.traceContext) {
             childContext.traceContext = this.traceContext.createChildSpan();
         } else {
-            childContext.traceContext = TraceContext.generateNew();
+            childContext.traceContext = TraceContext.generateNew(logType === 'aws');
         }
     
         return childContext;
