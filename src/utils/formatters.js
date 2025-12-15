@@ -188,6 +188,9 @@ const formatJsonLog = (log, options = {}) => {
   delete formatted.spanId;
   delete formatted.sourceLocation;
   delete formatted.operation;
+  delete formatted.httpRequest;
+  delete formatted.LOG_TYPE;
+  delete formatted.logType;
   
   return formatted;
 };
