@@ -86,7 +86,12 @@ const formatters = {
       const logType = object.LOG_TYPE || object.logType || getConfigValue('LOG_TYPE', 'gcp');
       
       if (logType === 'aws') {
-          const { severity, time, ...cleaned } = object;
+          // Remove fields that formatAwsLog will add to avoid duplicates
+          const { 
+              severity, time, 
+              service, requestId, traceId, spanId,
+              ...cleaned 
+          } = object;
           return cleaned;
       }
       
