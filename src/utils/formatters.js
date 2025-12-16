@@ -86,8 +86,12 @@ const formatters = {
       const logType = object.LOG_TYPE || object.logType || getConfigValue('LOG_TYPE', 'gcp');
       
       if (logType === 'aws') {
-          const cleaned = { ...object };
-          delete cleaned.time;
+          // Remove fields that formatAwsLog will add to avoid duplicates
+          const { 
+              severity, time, 
+              service, requestId, traceId, spanId,
+              ...cleaned 
+          } = object;
           return cleaned;
       }
       
@@ -184,6 +188,9 @@ const formatJsonLog = (log, options = {}) => {
   delete formatted.spanId;
   delete formatted.sourceLocation;
   delete formatted.operation;
+  delete formatted.httpRequest;
+  delete formatted.LOG_TYPE;
+  delete formatted.logType;
   
   return formatted;
 };
