@@ -60,7 +60,7 @@ const formatAwsLog = (object) => {
 
     const {
         pid, hostname, level, levelNumber, time, timestamp,
-        msg, severity, requestId, service,
+        msg, message, severity, requestId, service,
         traceId, spanId,
         method, url, path, params, remoteAddress, headers, request_payload,
         httpRequest, response,
@@ -95,6 +95,17 @@ const formatAwsLog = (object) => {
     
     if (type) {
         result.type = type;
+    } else {
+        result.type = 'console_log';
+    }
+    
+    // Preserve message across AWS formatting. The rest of the logger pipeline uses `messageKey: 'message'`,
+    // and console override produces `message`, not `msg`.
+    const effectiveMessage = (typeof msg === 'string' && msg.length > 0)
+        ? msg
+        : (typeof message === 'string' && message.length > 0 ? message : null);
+    if (effectiveMessage) {
+        result.message = effectiveMessage;
     }
     
     if (service) {
@@ -158,16 +169,16 @@ const formatAwsLog = (object) => {
     }
     
     const serviceName = service;
-    result.aws = {
-        cloudwatch: {
-            log_group: `/aws/service/${serviceName}`,
-            log_stream: instance || 'instance-1',
-            region: region || process.env.AWS_REGION,
-            account_id: account_id || process.env.AWS_ACCOUNT_ID
-        }
-    };
+    // result.aws = {
+    //     cloudwatch: {
+    //         log_group: `/aws/service/${serviceName}`,
+    //         log_stream: instance || 'instance-1',
+    //         region: region || process.env.AWS_REGION,
+    //         account_id: account_id || process.env.AWS_ACCOUNT_ID
+    //     }
+    // };
     
-    const allowedExtraFields = ['response'];
+    const allowedExtraFields = ['response', 'message', 'logLevel',];
     
     Object.keys(rest).forEach(key => {
         if (!key.startsWith('logging.googleapis.com/') &&
@@ -175,6 +186,7 @@ const formatAwsLog = (object) => {
             key !== 'levelNumber' &&
             key !== 'time' &&
             key !== 'msg' &&
+            key !== 'message' &&
             key !== 'httpRequest' &&
             key !== 'LOG_TYPE' &&
             key !== 'logType' &&

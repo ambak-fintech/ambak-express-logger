@@ -25,6 +25,8 @@ const createErrorLogger = (options = {}) => {
         // Build error metadata
         const errorMetadata = {
             msg: err.message || 'Request error',
+            type: 'error',
+            logLevel: 'error',
             error: {
                 type: err.type || err.name,
                 message: err.message,
