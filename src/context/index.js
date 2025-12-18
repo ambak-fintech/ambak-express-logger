@@ -46,11 +46,15 @@ class RequestContext {
         // Try AWS X-Amzn-Trace-Id first if LOG_TYPE is 'aws'
         let traceContext;
         if (logType === 'aws') {
-            if (req.headers['x-amzn-trace-id']) {
-                traceContext = TraceContext.parseAwsTraceId(req.headers['x-amzn-trace-id']);
-            } else {
-                // Generate new AWS-formatted trace ID if no header present
-                traceContext = TraceContext.generateNew(true);
+            if(req.headers['x-cloud-trace-context']) {
+                traceContext = TraceContext.parseAwsTraceId(req.headers['x-cloud-trace-context']);
+            } else {    
+                if (req.headers['x-amzn-trace-id']) {
+                    traceContext = TraceContext.parseAwsTraceId(req.headers['x-amzn-trace-id']);
+                } else {
+                    // Generate new AWS-formatted trace ID if no header present
+                    traceContext = TraceContext.generateNew(true);
+                }
             }
         } else if (req.headers['x-cloud-trace-context']) {
             traceContext = TraceContext.parseCloudTrace(req.headers['x-cloud-trace-context']);

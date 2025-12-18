@@ -53,6 +53,7 @@ class HttpLogger {
         return formatJsonLog({
             ...baseLogData,
             type: 'request',
+            logLevel: 'info',
             ...serializedReq,
             target_service: options.getTargetService?.(req) || 
                           req.path.split('/')[1] || 'unknown',
@@ -94,10 +95,12 @@ class HttpLogger {
 
     static createResponseLog(req, res, responseTime, baseLogData, responseBody, options = {}) {
         const { getConfigValue } = require('../config/constants');
+        const level = HttpLogger.getLogLevel(res?.statusCode);
         
         return formatJsonLog({
             ...baseLogData,
             type: 'response',
+            logLevel: level,
             response: {
                 statusCode: res.statusCode,
                 response_time_ms: responseTime,
@@ -226,14 +229,18 @@ const createRequestLogger = (options = {}) => {
         return asyncLocalStorage.run(context, () => {
             try {
                 // Attach logger to request
-                req.log = logger.child(contextLogData);
+                // Any "normal" logs emitted via req.log.* should be tagged as request logs by default.
+                // Response logs explicitly pass `type: 'response'`, which will override this binding.
+                req.log = logger.child({ ...contextLogData, type: 'request' });
 
                 // Add trace headers to request for forwarding to downstream services
                 if (context.traceContext) {
                     const logType = getConfigValue('LOG_TYPE', 'gcp');
 
                     if (logType === 'aws') {
-                        req.headers['x-amzn-trace-id'] = context.traceContext.toAwsTraceId();
+                        const XAmznTraceId = context.traceContext.toAwsTraceId();
+                        req.headers['x-amzn-trace-id'] = XAmznTraceId;
+                        req.headers['x-cloud-trace-context'] = XAmznTraceId;
                     } else {
                         req.headers.traceparent = context.traceContext.toTraceParent();
                         req.headers['x-cloud-trace-context'] = context.traceContext.toCloudTrace();
