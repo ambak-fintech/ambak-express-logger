@@ -118,7 +118,9 @@ class HttpLogger {
         const headers = {};
 
         if (logType === 'aws') {
-            headers['x-amzn-trace-id'] = context.traceContext.toAwsTraceId();
+            const XAmznTraceId = context.traceContext.toAwsTraceId();
+            headers['x-amzn-trace-id'] = XAmznTraceId;
+            headers['x-cloud-trace-context'] = XAmznTraceId;
         } else {
             headers.traceparent = context.traceContext.toTraceParent();
             headers['x-cloud-trace-context'] = context.traceContext.toCloudTrace();
