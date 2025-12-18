@@ -95,8 +95,7 @@ const formatAwsLog = (object) => {
     
     if (type) {
         result.type = type;
-    }
-    else{
+    } else {
         result.type = 'console_log';
     }
     
