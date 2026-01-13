@@ -51,6 +51,14 @@ const getResourceLabels = (projectId = PROJECT_ID, loggerName = LOGGER_NAME) => 
 */
 const formatters = {
   level: (label, number) => {
+      const logType = getConfigValue('LOG_TYPE', 'gcp');
+      
+      if (logType === 'aws') {
+          return {
+              level: number
+          };
+      }
+      
       return {
           severity: SEVERITY_LEVEL[label] || 'DEFAULT',
           level: number
