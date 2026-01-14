@@ -83,8 +83,6 @@ const formatAwsLog = (object) => {
         result.severity = severity;
     } else if (level !== undefined) {
         result.severity = levelToSeverity[level] || SEVERITY_LEVEL['info'] || 'INFO';
-    } else {
-        result.severity = 'INFO';
     }
     
     if (level !== undefined) {
