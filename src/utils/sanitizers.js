@@ -1,6 +1,6 @@
 // src/utils/sanitizers.js
 
-const { getSensitiveFields, getSensitiveHeaders, CONTENT_LIMITS } = require('../config/constants');
+const { getSensitiveFields, getSensitiveHeaders, CONTENT_LIMITS, MAX_REGEX_TEST_SIZE } = require('../config/constants');
 
 /**
  * Regular expression patterns for identifying sensitive data formats
@@ -25,6 +25,10 @@ const memoizedChecks = new Map();
 function sanitizeImageData(value) {
     if (typeof value !== 'string') return value;
     
+    if (value.length > MAX_REGEX_TEST_SIZE) {
+        return `[LARGE BASE64 DATA - ${(value.length / 1024).toFixed(0)}KB]`;
+    }
+
     // Check memoization cache
     const cached = memoizedChecks.get(value);
     if (cached) return cached;
@@ -63,10 +67,18 @@ function sanitizeValue(key, value, sensitiveFields) {
         return value;
     }
 
+    const keyLower = key.toLowerCase();
+    
+    // Skip regex tests for very large strings to prevent stack overflow
+    if (value.length > MAX_REGEX_TEST_SIZE && (keyLower.includes('image') || keyLower.includes('attachment') || keyLower.includes('content') || value.startsWith('data:image/'))) {
+        return `[LARGE ${keyLower.includes('image') ? 'IMAGE' : 'BASE64'} DATA - ${(value.length / 1024).toFixed(0)}KB]`;
+    }
+    if (value.length > MAX_REGEX_TEST_SIZE) {
+        return `[LARGE STRING - ${(value.length / 1024).toFixed(0)}KB]`;
+    }
+
     // Check for sensitive patterns in longer strings
     if (value.length > 100) {
-        const keyLower = key.toLowerCase();
-        
         if (keyLower.includes('image') || value.startsWith('data:image/')) {
             return '[IMAGE DATA REDACTED]';
         }

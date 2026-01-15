@@ -113,7 +113,7 @@ module.exports = {
   shouldExcludePath,
   SEVERITY_LEVEL,
   LOG_LEVELS,
-  
+  MAX_REGEX_TEST_SIZE: 10000,
   CONTENT_LIMITS: {
     STRING_RESPONSE: parseInt(getConfigValue('LOG_STRING_LIMIT', '1024')),
     JSON_DEPTH: parseInt(getConfigValue('LOG_JSON_DEPTH', '10')),
