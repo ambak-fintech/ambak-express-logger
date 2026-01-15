@@ -1,7 +1,6 @@
 // src/utils/console-override.js
 const { logger } = require('../logger');
 const RequestContext = require('../context');
-const { formatJsonLog } = require('./formatters');
 const { SERVICE_NAME } = require('../config/constants');
 
 const originalConsole = {
@@ -25,20 +24,16 @@ const formatArgs = (...args) => {
 
     // Get current request context
     const context = RequestContext.get();
-    
-    // Create base log object with context
-    const logData = {
+    return {
         message,
         requestId: context?.requestId,
         traceId: context?.traceId,
         spanId: context?.spanId,
         service: SERVICE_NAME(),
         logSource: 'console',
-        log_override: true
+        log_override: true,
+        type: 'console_log'
     };
-
-    // Format the log object using the same formatter as request logs
-    return formatJsonLog(logData);
 };
 
 const enableConsoleOverride = () => {

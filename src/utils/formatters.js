@@ -53,8 +53,20 @@ const formatters = {
   level: (label, number) => {
       const logType = getConfigValue('LOG_TYPE', 'gcp');
       
+      // Map pino level numbers to AWS severity
+      const levelToSeverity = {
+          10: 'DEBUG',   // trace
+          20: 'DEBUG',   // debug
+          30: 'INFO',    // info
+          40: 'WARNING', // warn
+          50: 'ERROR',   // error
+          60: 'CRITICAL' // fatal
+      };
+      
       if (logType === 'aws') {
+          // For AWS, set severity based on log level
           return {
+              severity: levelToSeverity[number] || 'INFO',
               level: number
           };
       }
@@ -90,7 +102,7 @@ const formatters = {
   },
 
   log: (object) => {
-      // Check LOG_TYPE - if AWS, remove unwanted fields that Pino might have added
+      // Check LOG_TYPE - if AWS, apply AWS formatting with level info now available
       const logType = object.LOG_TYPE || object.logType || getConfigValue('LOG_TYPE', 'gcp');
       
       if (logType === 'aws') {
@@ -102,7 +114,9 @@ const formatters = {
               } = object;
               return cleaned;
           }
-          return object;
+          // For non-HTTP logs (like console_log), apply AWS formatting here
+          // where level is already known from pino
+          return formatAwsLog(object);
       }
       
       const {
