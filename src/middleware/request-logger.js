@@ -96,6 +96,10 @@ class HttpLogger {
     static createResponseLog(req, res, responseTime, baseLogData, responseBody, options = {}) {
         const { getConfigValue } = require('../config/constants');
         const level = HttpLogger.getLogLevel(res?.statusCode);
+        const httpRequest = this.createHttpRequestObject(req, res, responseTime);
+        if (options.omitRequestPayloadInResponse) {
+            delete httpRequest.requestBody;
+        }
         
         return formatJsonLog({
             ...baseLogData,
@@ -108,7 +112,7 @@ class HttpLogger {
                 body: responseBody && options.logResponseBody ? 
                       sanitizeBody(responseBody.toString('utf8')) : undefined,
             },
-            httpRequest: this.createHttpRequestObject(req, res, responseTime),
+            httpRequest,
             LOG_TYPE: baseLogData.LOG_TYPE || getConfigValue('LOG_TYPE', 'gcp')
         });
     }
@@ -211,6 +215,7 @@ const createRequestLogger = (options = {}) => {
         logger = baseLogger,
         excludePaths = [],
         logResponseBody = true,
+        omitRequestPayloadInResponse = false,
         getTargetService,
         baseLogData = {},
         ...otherOptions
@@ -265,6 +270,7 @@ const createRequestLogger = (options = {}) => {
                 // Setup response interceptor
                 new ResponseInterceptor(res, req, contextLogData, {
                     logResponseBody,
+                    omitRequestPayloadInResponse,
                     ...otherOptions
                 }).setup();
 

@@ -1,7 +1,7 @@
 //src/logger/base-logger.js
 const pino = require('pino');
 const RequestContext = require('../context');
-const { LOG_LEVELS, LOG_LEVEL, SERVICE_NAME, getConfigValue } = require('../config/constants');
+const { LOG_LEVELS, LOG_LEVEL, SERVICE_NAME, getConfigValue, resolveLogLevel, resolveLogRegister } = require('../config/constants');
 const transport = require('./transport');
 const { formatters } = require('../utils/formatters');
 const { serializers } = require('../utils/serializers');
@@ -44,9 +44,11 @@ const createLoggerOptions = (customOptions = {}) => {
     const { getConfigValue } = require('../config/constants');
     const logType = getConfigValue('LOG_TYPE', 'gcp');
     const timestamp = logType === 'aws' ? false : pino.stdTimeFunctions.isoTime;
+    const configuredLogLevel = resolveLogLevel(getConfigValue('LOG_LEVEL', LOG_LEVEL || 'info'));
+    const effectiveLogLevel = resolveLogRegister(getConfigValue('LOG_REGISTER', '5'), configuredLogLevel);
     
     return {
-        level: LOG_LEVEL,
+        level: effectiveLogLevel,
         transport,
         messageKey: 'message',
         timestamp,

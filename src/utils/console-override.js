@@ -1,5 +1,5 @@
 // src/utils/console-override.js
-const { logger } = require('../logger');
+const { logger: defaultLogger } = require('../logger');
 const RequestContext = require('../context');
 const { SERVICE_NAME } = require('../config/constants');
 
@@ -36,17 +36,17 @@ const formatArgs = (...args) => {
     };
 };
 
-const enableConsoleOverride = () => {
+const enableConsoleOverride = (activeLogger = defaultLogger) => {
     console.log = (...args) => {
-        logger.info(formatArgs(...args));
+        activeLogger.info(formatArgs(...args));
     };
 
     console.warn = (...args) => {
-        logger.warn(formatArgs(...args));
+        activeLogger.warn(formatArgs(...args));
     };
 
     console.error = (...args) => {
-        logger.error(formatArgs(...args));
+        activeLogger.error(formatArgs(...args));
     };
 };
 
