@@ -1,6 +1,6 @@
 // src/utils/console-override.js
 const { stringify } = require('safe-stable-stringify');
-const { logger } = require('../logger');
+const { logger: defaultLogger } = require('../logger');
 const RequestContext = require('../context');
 const { formatJsonLog } = require('./formatters');
 const { serializers } = require('./serializers');
@@ -12,12 +12,28 @@ const originalConsole = {
     error: console.error
 };
 
+// Flag to prevent infinite recursion during serialization
+let isSerializing = false;
+
 const safeStringify = (arg) => {
     if (arg === null || arg === undefined) return String(arg);
     if (typeof arg !== 'object') return String(arg);
 
+    // Prevent infinite recursion: if we're already serializing and hit an Error,
+    // use a simple string representation instead of calling serializers.err()
+    if (isSerializing && arg instanceof Error) {
+        return `[Error: ${arg.message || 'Unknown error'}]`;
+    }
+
     // Route known complex objects through your existing serializers
-    if (arg instanceof Error) return stringify(serializers.err(arg));
+    if (arg instanceof Error) {
+        isSerializing = true;
+        try {
+            return stringify(serializers.err(arg));
+        } finally {
+            isSerializing = false;
+        }
+    }
     if (arg.method && arg.headers && (arg.url || arg.originalUrl)) {
         return stringify(serializers.req(arg));
     }
@@ -48,9 +64,9 @@ const formatArgs = (...args) => {
     return formatJsonLog(logData);
 };
 
-const enableConsoleOverride = () => {
-    console.log = (...args) => logger.info(formatArgs(...args));
-    console.warn = (...args) => logger.warn(formatArgs(...args));
+const enableConsoleOverride = (activeLogger = defaultLogger) => {
+    console.log = (...args) => activeLogger.info(formatArgs(...args));
+    console.warn = (...args) => activeLogger.warn(formatArgs(...args));
     console.error = (...args) => {
         const formatted = formatArgs(...args);
         // Enrich with error details if a single Error was passed
@@ -60,7 +76,7 @@ const enableConsoleOverride = () => {
                 error: { name: err.name, message: err.message, stack: err.stack }
             });
         }
-        logger.error(formatted);
+        activeLogger.error(formatted);
     };
 };
 
