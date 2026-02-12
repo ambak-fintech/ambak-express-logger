@@ -42,6 +42,37 @@ const LOG_LEVELS = {
   fatal: 60
 };
 
+const resolveLogLevel = (rawLevel) => {
+  const normalized = rawLevel !== undefined && rawLevel !== null
+    ? String(rawLevel).trim().toLowerCase()
+    : '';
+
+  if (normalized === '') {
+    return 'info';
+  }
+
+  return normalized;
+};
+
+// Supports numeric log scale through LOG_REGISTER:
+// 0 => silent (no logs), 1..5 => current behavior (fallbackLevel).
+const resolveLogRegister = (rawRegister, fallbackLevel = 'info') => {
+  const normalized = rawRegister !== undefined && rawRegister !== null
+    ? String(rawRegister).trim().toLowerCase()
+    : '';
+
+  if (normalized === '') {
+    return fallbackLevel;
+  }
+
+  const numericLevel = Number(normalized);
+  if (!Number.isNaN(numericLevel) && numericLevel >= 0 && numericLevel <= 5) {
+    return numericLevel === 0 ? 'silent' : fallbackLevel;
+  }
+
+  return fallbackLevel;
+};
+
 const DEFAULT_SENSITIVE_FIELDS = new Set([
   'password',
   'token',
@@ -113,6 +144,8 @@ module.exports = {
   shouldExcludePath,
   SEVERITY_LEVEL,
   LOG_LEVELS,
+  resolveLogLevel,
+  resolveLogRegister,
   MAX_REGEX_TEST_SIZE: 10000,
   CONTENT_LIMITS: {
     STRING_RESPONSE: parseInt(getConfigValue('LOG_STRING_LIMIT', '1024')),
