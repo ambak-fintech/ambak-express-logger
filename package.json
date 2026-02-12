@@ -3,7 +3,7 @@
   "version": "1.0.12",
   "description": "A comprehensive logging middleware for Express applications with distributed tracing support",
   "repository": {
-    "type": "git", 
+    "type": "git",
     "url": "git+https://github.com/ambak-fintech/ambak-express-logger.git"
   },
   "bugs": {
@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "test": "jest",
-    "test:watch": "jest --watch", 
+    "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --coverageThreshold.global.statements=40 --coverageThreshold.global.functions=40 --coverageThreshold.global.lines=40 --coverageThreshold.global.branches=40",
     "test:ci": "jest --ci --coverage --runInBand",
     "lint": "eslint .",
@@ -31,7 +31,7 @@
   "keywords": [
     "express",
     "logger",
-    "middleware", 
+    "middleware",
     "pino",
     "distributed-tracing",
     "logging"
@@ -45,14 +45,15 @@
   "license": "MIT",
   "dependencies": {
     "pino": "^8.0.0",
-    "pino-pretty": "^10.0.0"
+    "pino-pretty": "^10.0.0",
+    "safe-stable-stringify": "^2.5.0"
   },
   "peerDependencies": {
     "express": "^4.0.0"
   },
   "devDependencies": {
     "eslint": "^8.0.0",
-    "express": "^4.18.2", 
+    "express": "^4.18.2",
     "jest": "^29.0.0",
     "prettier": "^3.0.0",
     "supertest": "^6.3.4"
@@ -63,4 +64,4 @@
   "publishConfig": {
     "access": "public"
   }
- }
+}

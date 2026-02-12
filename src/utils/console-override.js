@@ -1,6 +1,9 @@
 // src/utils/console-override.js
-const { logger: defaultLogger } = require('../logger');
+const { stringify } = require('safe-stable-stringify');
+const { logger } = require('../logger');
 const RequestContext = require('../context');
+const { formatJsonLog } = require('./formatters');
+const { serializers } = require('./serializers');
 const { SERVICE_NAME } = require('../config/constants');
 
 const originalConsole = {
@@ -9,44 +12,55 @@ const originalConsole = {
     error: console.error
 };
 
-const formatArgs = (...args) => {
-    // Format all arguments into a message string
-    const message = args.map(arg => {
-        if (typeof arg === 'object') {
-            try {
-                return JSON.stringify(arg);
-            } catch (e) {
-                return '[Complex Object]';
-            }
-        }
-        return String(arg);
-    }).join(' ');
+const safeStringify = (arg) => {
+    if (arg === null || arg === undefined) return String(arg);
+    if (typeof arg !== 'object') return String(arg);
 
-    // Get current request context
+    // Route known complex objects through your existing serializers
+    if (arg instanceof Error) return stringify(serializers.err(arg));
+    if (arg.method && arg.headers && (arg.url || arg.originalUrl)) {
+        return stringify(serializers.req(arg));
+    }
+    if (arg.statusCode !== undefined && typeof arg.getHeaders === 'function') {
+        return stringify(serializers.res(arg));
+    }
+
+    // safe-stable-stringify handles circular refs, throwing getters,
+    // BigInt, Proxy objects, etc.
+    return stringify(arg);
+};
+
+const formatArgs = (...args) => {
+    const message = args.map(safeStringify).join(' ');
+
     const context = RequestContext.get();
-    return {
+
+    const logData = {
         message,
         requestId: context?.requestId,
         traceId: context?.traceId,
         spanId: context?.spanId,
         service: SERVICE_NAME(),
         logSource: 'console',
-        log_override: true,
-        type: 'console_log'
+        log_override: true
     };
+
+    return formatJsonLog(logData);
 };
 
-const enableConsoleOverride = (activeLogger = defaultLogger) => {
-    console.log = (...args) => {
-        activeLogger.info(formatArgs(...args));
-    };
-
-    console.warn = (...args) => {
-        activeLogger.warn(formatArgs(...args));
-    };
-
+const enableConsoleOverride = () => {
+    console.log = (...args) => logger.info(formatArgs(...args));
+    console.warn = (...args) => logger.warn(formatArgs(...args));
     console.error = (...args) => {
-        activeLogger.error(formatArgs(...args));
+        const formatted = formatArgs(...args);
+        // Enrich with error details if a single Error was passed
+        if (args.length === 1 && args[0] instanceof Error) {
+            const err = args[0];
+            Object.assign(formatted, {
+                error: { name: err.name, message: err.message, stack: err.stack }
+            });
+        }
+        logger.error(formatted);
     };
 };
 
@@ -56,7 +70,4 @@ const disableConsoleOverride = () => {
     console.error = originalConsole.error;
 };
 
-module.exports = {
-    enableConsoleOverride,
-    disableConsoleOverride
-};
+module.exports = { enableConsoleOverride, disableConsoleOverride };
