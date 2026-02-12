@@ -185,7 +185,6 @@ const serializers = {
      */
     err: (err) => {
         if (!err) return err;
-        console.log(err);
         try {
             return {
                 type: err.type || err.name,
