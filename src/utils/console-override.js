@@ -1,5 +1,5 @@
 // src/utils/console-override.js
-const { stringify } = require('../../node_modules/safe-stable-stringify');
+const { stringify } = require('safe-stable-stringify');
 const { logger: defaultLogger } = require('../logger');
 const RequestContext = require('../context');
 const { formatJsonLog } = require('./formatters');
