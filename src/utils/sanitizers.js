@@ -30,10 +30,10 @@ function sanitizeImageData(value) {
     }
 
     // Check memoization cache
-    const cached = memoizedChecks.get(value);
-    if (cached) return cached;
+    // const cached = memoizedChecks.get(value);
+    // if (cached) return cached;
     
-    let result = value;
+    // let result = value;
     
     if (value.length > 100) {
         if (PATTERNS.BASE64_IMAGE.test(value) || PATTERNS.BASE64_GENERIC.test(value)) {
@@ -43,12 +43,12 @@ function sanitizeImageData(value) {
         }
     }
     
-    // Cache the result (with size limit)
-    if (memoizedChecks.size < 1000) {
-        memoizedChecks.set(value, result);
-    }
+    // // Cache the result (with size limit)
+    // if (memoizedChecks.size < 1000) {
+    //     memoizedChecks.set(value, result);
+    // }
     
-    return result;
+    return value;
 }
 
 /**

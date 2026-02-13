@@ -178,25 +178,28 @@ const formatAwsLog = (object) => {
     
     const allowedExtraFields = ['response', 'message', 'logLevel',];
     
-    Object.keys(rest).forEach(key => {
-        if (!key.startsWith('logging.googleapis.com/') &&
-            key !== 'resource' &&
-            key !== 'levelNumber' &&
-            key !== 'time' &&
-            key !== 'msg' &&
-            key !== 'message' &&
-            key !== 'httpRequest' &&
-            key !== 'LOG_TYPE' &&
-            key !== 'logType' &&
-            !result.hasOwnProperty(key) &&
-            allowedExtraFields.includes(key)) {
-            result[key] = rest[key];
-        }
-    });
+    const INTERNAL_FIELDS = new Set([
+        'logging.googleapis.com/trace',
+        'logging.googleapis.com/spanId',
+        'logging.googleapis.com/logName',
+        'logging.googleapis.com/labels',
+        'logging.googleapis.com/httpRequest',
+        'logging.googleapis.com/sourceLocation',
+        'logging.googleapis.com/operation',
+        'resource',
+        'levelNumber',
+        'time',
+        'msg',
+        'httpRequest',
+        'LOG_TYPE',
+        'logType',
+    ]);
     
-    Object.keys(result).forEach(key => {
-        if (key.startsWith('logging.googleapis.com/')) {
-            delete result[key];
+    Object.keys(rest).forEach(key => {
+        if (!INTERNAL_FIELDS.has(key)
+            && !key.startsWith('logging.googleapis.com/')
+            && !result.hasOwnProperty(key)) {
+            result[key] = rest[key];
         }
     });
     

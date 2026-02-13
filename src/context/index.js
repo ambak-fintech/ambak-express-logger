@@ -22,22 +22,31 @@ class RequestContext {
         return asyncLocalStorage.getStore() || new RequestContext();
     }
 
+    
     /**
      * Create a new context from request
      * @param {Express.Request} req - Express request object
      * @returns {RequestContext}
      */
     static create(req) {
+        let MAX_REQUEST_ID_LENGTH = 128;
+        let VALID_REQUEST_ID = /^[a-zA-Z0-9._\-]+$/;
         const context = new RequestContext();
         const { getConfigValue } = require('../config/constants');
     
         // Generate request ID - always use short 8-character format for consistency
         // If x-request-id header exists, use it only if it's already 8 chars, otherwise generate new one
         const incomingRequestId = req.headers['x-request-id'];
-        if (incomingRequestId && typeof incomingRequestId === 'string' && incomingRequestId.length === 8 && /^[0-9a-f]{8}$/i.test(incomingRequestId)) {
+        if (
+            incomingRequestId
+            && typeof incomingRequestId === 'string'
+            && incomingRequestId.length > 0
+            && incomingRequestId.length <= MAX_REQUEST_ID_LENGTH
+            && VALID_REQUEST_ID.test(incomingRequestId)
+        ) {
             context.requestId = incomingRequestId.toLowerCase();
         } else {
-            context.requestId = crypto.randomBytes(16).toString('hex').slice(0, 8);
+            context.requestId = crypto.randomUUID();
         }
     
         // Check LOG_TYPE to determine which trace format to use

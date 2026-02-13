@@ -185,22 +185,31 @@ const serializers = {
      */
     err: (err) => {
         if (!err) return err;
-        try {
-            return {
-                type: err.type || err.name,
-                message: err.message,
-                code: err.code,
-                stack: err.stack,
-                statusCode: err.statusCode || err.status,
-                ...(err.details && { details: err.details }),
-                ...(err.context && { context: sanitizeBody(err.context) })
-            };
-        } catch (e) {
-            return {
-                error: 'Failed to serialize error',
-                message: e.message
-            };
-        }
+    
+        const MAX_CAUSE_DEPTH = 5;
+    
+        const serializeOne = (e, depth = 0) => {
+            if (!e || depth > MAX_CAUSE_DEPTH) return undefined;
+            try {
+                const serialized = {
+                    type: e.type || e.name,
+                    message: e.message,
+                    code: e.code,
+                    stack: e.stack,
+                    statusCode: e.statusCode || e.status,
+                    ...(e.details && { details: e.details }),
+                    ...(e.context && { context: sanitizeBody(e.context) }),
+                };
+                if (e.cause) {
+                    serialized.cause = serializeOne(e.cause, depth + 1);
+                }
+                return serialized;
+            } catch (ex) {
+                return { error: 'Failed to serialize error', message: ex.message };
+            }
+        };
+    
+        return serializeOne(err);
     }
 };
 

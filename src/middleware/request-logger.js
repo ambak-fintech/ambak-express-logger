@@ -144,6 +144,7 @@ class HttpLogger {
     }
 }
 
+const MAX_RESPONSE_BUFFER_BYTES = 200 * 1024; // 200KB
 class ResponseInterceptor {
     constructor(res, req, baseLogData, options = {}) {
         this.res = res;
@@ -151,10 +152,30 @@ class ResponseInterceptor {
         this.baseLogData = baseLogData;
         this.options = options;
         this.chunks = [];
+        this.totalBytes = 0;
+        this.truncated = false;
         this.metrics = new RequestMetrics(process.hrtime());
         
         this.writeInterceptor = this.writeInterceptor.bind(this);
         this.endInterceptor = this.endInterceptor.bind(this);
+    }
+
+    _collectChunk(chunk) {
+        if (!chunk || !this.options.logResponseBody || this.truncated) return;
+
+        const buf = Buffer.from(chunk);
+        if (this.totalBytes + buf.length > MAX_RESPONSE_BUFFER_BYTES) {
+            // Collect partial to hit the limit, then stop
+            const remaining = MAX_RESPONSE_BUFFER_BYTES - this.totalBytes;
+            if (remaining > 0) {
+                this.chunks.push(buf.slice(0, remaining));
+                this.totalBytes += remaining;
+            }
+            this.truncated = true;
+            return;
+        }
+        this.chunks.push(buf);
+        this.totalBytes += buf.length;
     }
 
     setup() {
@@ -171,20 +192,21 @@ class ResponseInterceptor {
     }
 
     writeInterceptor(chunk, encoding, callback) {
-        if (chunk && this.options.logResponseBody) {
-            this.chunks.push(Buffer.from(chunk));
-        }
+        this._collectChunk(chunk);
         return this._originalWrite(chunk, encoding, callback);
     }
 
     endInterceptor(chunk, encoding, callback) {
-        if (chunk && this.options.logResponseBody) {
-            this.chunks.push(Buffer.from(chunk));
-        }
+        this._collectChunk(chunk);
 
         const responseTime = this.metrics.getResponseTime();
         const responseBody = this.chunks.length > 0 ? Buffer.concat(this.chunks) : null;
-        
+        if (this.truncated && responseBody) {
+            responseBody = Buffer.concat([
+                responseBody,
+                Buffer.from(`... [TRUNCATED - response exceeded ${MAX_RESPONSE_BUFFER_BYTES / 1024}KB]`)
+            ]);
+        }
         const level = HttpLogger.getLogLevel(this.res.statusCode);
         const responseLog = HttpLogger.createResponseLog(
             this.req, 
@@ -236,7 +258,7 @@ const createRequestLogger = (options = {}) => {
                 // Attach logger to request
                 // Any "normal" logs emitted via req.log.* should be tagged as request logs by default.
                 // Response logs explicitly pass `type: 'response'`, which will override this binding.
-                req.log = logger.child({ ...contextLogData, type: 'request' });
+                req.log = logger.child({ ...contextLogData });
 
                 // Add trace headers to request for forwarding to downstream services
                 if (context.traceContext) {

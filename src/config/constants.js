@@ -27,8 +27,8 @@ const shouldExcludePath = (path, customExclusions = []) => {
 const SEVERITY_LEVEL = {
   trace: 'DEBUG',
   debug: 'DEBUG',
-  info: 'INFO',
-  warn: 'WARNING',
+  info:  'INFO',
+  warn:  'WARNING',
   error: 'ERROR',
   fatal: 'CRITICAL'
 };
@@ -36,8 +36,8 @@ const SEVERITY_LEVEL = {
 const LOG_LEVELS = {
   trace: 10,
   debug: 20,
-  info: 30,
-  warn: 40,
+  info:  30,
+  warn:  40,
   error: 50,
   fatal: 60
 };
@@ -75,15 +75,26 @@ const resolveLogRegister = (rawRegister, fallbackLevel = 'info') => {
 
 const DEFAULT_SENSITIVE_FIELDS = new Set([
   'password',
+  'passwd',
   'token',
+  'access_token',
+  'refresh_token',
   'authorization',
-  'key',
+  'api_key',
+  'apikey',
+  'api_secret',
+  'secret_key',
   'secret',
   'credential',
   'creditcard',
   'credit_card',
+  'credit_card_number',
   'cardnumber',
-  'apikey',
+  'card_number',
+  'cvv',
+  'cvc',
+  'ssn',
+  'social_security',
   'phone',
   'email',
   'dob',
