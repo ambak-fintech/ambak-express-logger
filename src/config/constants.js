@@ -9,8 +9,10 @@ const getConfigValue = (key, defaultValue) => {
 const EXCLUDED_PATHS = [
   '/health',
   '/metrics',
+  '/ready',
   '/*/health',
-  '/*/metrics'
+  '/*/metrics',
+  '/*/ready'
 ];
 
 const shouldExcludePath = (path, customExclusions = []) => {
