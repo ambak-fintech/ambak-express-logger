@@ -200,7 +200,7 @@ class ResponseInterceptor {
         this._collectChunk(chunk);
 
         const responseTime = this.metrics.getResponseTime();
-        const responseBody = this.chunks.length > 0 ? Buffer.concat(this.chunks) : null;
+        let responseBody = this.chunks.length > 0 ? Buffer.concat(this.chunks) : null;
         if (this.truncated && responseBody) {
             responseBody = Buffer.concat([
                 responseBody,
