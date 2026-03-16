@@ -96,11 +96,7 @@ class HttpLogger {
     static createResponseLog(req, res, responseTime, baseLogData, responseBody, options = {}) {
         const { getConfigValue } = require('../config/constants');
         const level = HttpLogger.getLogLevel(res?.statusCode);
-        const httpRequest = this.createHttpRequestObject(req, res, responseTime);
-        if (options.omitRequestPayloadInResponse) {
-            delete httpRequest.requestBody;
-        }
-        
+
         return formatJsonLog({
             ...baseLogData,
             type: 'response',
@@ -108,11 +104,9 @@ class HttpLogger {
             response: {
                 statusCode: res.statusCode,
                 response_time_ms: responseTime,
-                headers: sanitizeHeaders(res.getHeaders()),
-                body: responseBody && options.logResponseBody ? 
+                body: responseBody && options.logResponseBody ?
                       sanitizeBody(responseBody.toString('utf8')) : undefined,
             },
-            httpRequest,
             LOG_TYPE: baseLogData.LOG_TYPE || getConfigValue('LOG_TYPE', 'gcp')
         });
     }

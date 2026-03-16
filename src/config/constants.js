@@ -107,7 +107,8 @@ const DEFAULT_SENSITIVE_HEADERS = [
   'cookie',
   'x-api-key',
   'token',
-  'password'
+  'password',
+  'gateway-services'
 ];
 
 const getSensitiveFields = () => {
