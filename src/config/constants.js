@@ -159,7 +159,7 @@ module.exports = {
   resolveLogLevel,
   resolveLogRegister,
   MAX_REGEX_TEST_SIZE: 10000,
-  SLOW_RESPONSE_THRESHOLD_MS: parseInt(getConfigValue('SLOW_RESPONSE_THRESHOLD_MS', '3000')),
+  SLOW_RESPONSE_THRESHOLD_MS: parseInt(getConfigValue('SLOW_RESPONSE_THRESHOLD_MS', '3000'), 10) || 3000,
   CONTENT_LIMITS: {
     STRING_RESPONSE: parseInt(getConfigValue('LOG_STRING_LIMIT', '1024')),
     JSON_DEPTH: parseInt(getConfigValue('LOG_JSON_DEPTH', '10')),
