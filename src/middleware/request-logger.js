@@ -5,11 +5,13 @@ const RequestContext = require('../context');
 const { serializers } = require('../utils/serializers');
 const { sanitizeHeaders, sanitizeBody } = require('../utils/sanitizers');
 const { formatJsonLog } = require('../utils/formatters');
-const { shouldExcludePath, SERVICE_NAME, getConfigValue } = require('../config/constants');
+const { shouldExcludePath, SERVICE_NAME, getConfigValue, SLOW_RESPONSE_THRESHOLD_MS } = require('../config/constants');
 
 class RequestMetrics {
     constructor(startTime) {
         this.startTime = startTime;
+        this.startMemory = process.memoryUsage();
+        this.startCpu = process.cpuUsage();
     }
 
     getResponseTime() {
@@ -21,6 +23,39 @@ class RequestMetrics {
         return {
             seconds: Math.floor(responseTime / 1000),
             nanos: (responseTime % 1000) * 1e6
+        };
+    }
+
+    getDiagnostics(responseTimeMs) {
+        const thresholdMs = SLOW_RESPONSE_THRESHOLD_MS;
+        if (responseTimeMs < thresholdMs) return null;
+
+        const endMemory = process.memoryUsage();
+        const cpuDelta = process.cpuUsage(this.startCpu);
+
+        return {
+            slow: true,
+            thresholdMs,
+            memory: {
+                rssBytes: endMemory.rss,
+                heapUsedBytes: endMemory.heapUsed,
+                heapTotalBytes: endMemory.heapTotal,
+                externalBytes: endMemory.external,
+                arrayBuffersBytes: endMemory.arrayBuffers || 0
+            },
+            memoryDelta: {
+                rssBytes: endMemory.rss - this.startMemory.rss,
+                heapUsedBytes: endMemory.heapUsed - this.startMemory.heapUsed,
+                heapTotalBytes: endMemory.heapTotal - this.startMemory.heapTotal,
+                externalBytes: endMemory.external - this.startMemory.external
+            },
+            cpu: {
+                userMs: parseFloat((cpuDelta.user / 1000).toFixed(2)),
+                systemMs: parseFloat((cpuDelta.system / 1000).toFixed(2))
+            },
+            eventLoopLagMs: parseFloat((responseTimeMs - (cpuDelta.user + cpuDelta.system) / 1000).toFixed(2)),
+            activeHandles: process._getActiveHandles?.().length || 0,
+            activeRequests: process._getActiveRequests?.().length || 0
         };
     }
 }
@@ -97,7 +132,7 @@ class HttpLogger {
         const { getConfigValue } = require('../config/constants');
         const level = HttpLogger.getLogLevel(res?.statusCode);
 
-        return formatJsonLog({
+        const logData = {
             ...baseLogData,
             type: 'response',
             logLevel: level,
@@ -108,7 +143,13 @@ class HttpLogger {
                       sanitizeBody(responseBody.toString('utf8')) : undefined,
             },
             LOG_TYPE: baseLogData.LOG_TYPE || getConfigValue('LOG_TYPE', 'gcp')
-        });
+        };
+
+        if (options.diagnostics) {
+            logData.diagnostics = options.diagnostics;
+        }
+
+        return formatJsonLog(logData);
     }
 
     static setTraceHeaders(res, context) {
@@ -194,6 +235,7 @@ class ResponseInterceptor {
         this._collectChunk(chunk);
 
         const responseTime = this.metrics.getResponseTime();
+        const diagnostics = this.metrics.getDiagnostics(responseTime);
         let responseBody = this.chunks.length > 0 ? Buffer.concat(this.chunks) : null;
         if (this.truncated && responseBody) {
             responseBody = Buffer.concat([
@@ -203,12 +245,12 @@ class ResponseInterceptor {
         }
         const level = HttpLogger.getLogLevel(this.res.statusCode);
         const responseLog = HttpLogger.createResponseLog(
-            this.req, 
-            this.res, 
-            responseTime, 
+            this.req,
+            this.res,
+            responseTime,
             this.baseLogData,
             responseBody,
-            this.options
+            { ...this.options, diagnostics }
         );
 
         this.req.log[level](responseLog);
