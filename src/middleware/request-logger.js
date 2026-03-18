@@ -3,7 +3,7 @@ const { logger: baseLogger } = require('../logger');
 const asyncLocalStorage = require('../context/async-context');
 const RequestContext = require('../context');
 const { serializers } = require('../utils/serializers');
-const { sanitizeHeaders, sanitizeBody } = require('../utils/sanitizers');
+const { sanitizeBody } = require('../utils/sanitizers');
 const { formatJsonLog } = require('../utils/formatters');
 const { shouldExcludePath, SERVICE_NAME, getConfigValue, SLOW_RESPONSE_THRESHOLD_MS } = require('../config/constants');
 
@@ -131,6 +131,8 @@ class HttpLogger {
     static createResponseLog(req, res, responseTime, baseLogData, responseBody, options = {}) {
         const { getConfigValue } = require('../config/constants');
         const level = HttpLogger.getLogLevel(res?.statusCode);
+        const httpRequest = this.createHttpRequestObject(req, res, responseTime);
+        delete httpRequest.requestBody;
 
         const logData = {
             ...baseLogData,
@@ -142,6 +144,7 @@ class HttpLogger {
                 body: responseBody && options.logResponseBody ?
                       sanitizeBody(responseBody.toString('utf8')) : undefined,
             },
+            httpRequest,
             LOG_TYPE: baseLogData.LOG_TYPE || getConfigValue('LOG_TYPE', 'gcp')
         };
 
