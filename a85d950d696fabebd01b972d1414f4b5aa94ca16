@@ -1,0 +1,24 @@
+src/middleware/request-logger.js
+  0d0ec59158877713 6,134-135,147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "a85d950d696fabebd01b972d1414f4b5aa94ca16",
+  "prompts": {
+    "0d0ec59158877713": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5d73574a-4b31-4ccd-a3da-414cd1c143ab",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Pankaj Jha <pankaj.jha@ambak.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 9,
+      "accepted_lines": 5,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/11cb96942ef8e3c5dd54e559eaffc7a69fd88148ba2365df537535040509f26a"
+    }
+  }
+}
