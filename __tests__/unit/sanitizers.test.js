@@ -1,9 +1,10 @@
 // __tests__/unit/sanitizers.test.js
-const { 
-    sanitizeHeaders, 
+const {
+    sanitizeHeaders,
     sanitizeBody,
     sanitizeValue
 } = require('../../src/utils/sanitizers');
+const { getSensitiveHeaders } = require('../../src/config/constants');
 
 describe('Sanitizers', () => {
     describe('sanitizeHeaders', () => {
@@ -11,6 +12,7 @@ describe('Sanitizers', () => {
             const headers = {
                 'authorization': 'Bearer token123',
                 'x-api-key': 'secret-key',
+                'apikey': 'plain-api-key',
                 'content-type': 'application/json',
                 'user-agent': 'test-agent'
             };
@@ -18,6 +20,7 @@ describe('Sanitizers', () => {
             const sanitized = sanitizeHeaders(headers);
             expect(sanitized.authorization).toBe('[REDACTED]');
             expect(sanitized['x-api-key']).toBe('[REDACTED]');
+            expect(sanitized['apikey']).toBe('[REDACTED]');
             expect(sanitized['content-type']).toBe('application/json');
             expect(sanitized['user-agent']).toBe('test-agent');
         });
@@ -26,6 +29,19 @@ describe('Sanitizers', () => {
             expect(sanitizeHeaders(null)).toEqual({});
             expect(sanitizeHeaders(undefined)).toEqual({});
             expect(sanitizeHeaders({})).toEqual({});
+        });
+    });
+
+    describe('getSensitiveHeaders', () => {
+        const originalEnv = process.env.LOGGER_SENSITIVE_HEADERS;
+        afterEach(() => {
+            process.env.LOGGER_SENSITIVE_HEADERS = originalEnv;
+        });
+
+        it('keeps default headers redacted even when LOGGER_SENSITIVE_HEADERS overrides with an unrelated list', () => {
+            process.env.LOGGER_SENSITIVE_HEADERS = 'gateway-user';
+            const headers = getSensitiveHeaders();
+            expect(headers).toEqual(expect.arrayContaining(['apikey', 'authorization', 'gateway-user']));
         });
     });
 
