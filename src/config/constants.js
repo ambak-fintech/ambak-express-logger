@@ -106,9 +106,11 @@ const DEFAULT_SENSITIVE_HEADERS = [
   'authorization',
   'cookie',
   'x-api-key',
+  'apikey',
   'token',
   'password',
-  'gateway-services'
+  'gateway-services',
+  'gateway-user'
 ];
 
 const getSensitiveFields = () => {
@@ -125,7 +127,13 @@ const getSensitiveFields = () => {
 const getSensitiveHeaders = () => {
   const envHeaders = getConfigValue('LOGGER_SENSITIVE_HEADERS');
   if (envHeaders) {
-    return envHeaders.split(',').map(h => h.trim().toLowerCase());
+    // Merge with defaults (like getSensitiveFields above) instead of replacing them -
+    // otherwise setting LOGGER_SENSITIVE_HEADERS to add one header silently un-redacts
+    // every other default header, which is how "apikey" leaked in sfa-api's prod logs.
+    return [...new Set([
+      ...DEFAULT_SENSITIVE_HEADERS,
+      ...envHeaders.split(',').map(h => h.trim().toLowerCase())
+    ])];
   }
   return DEFAULT_SENSITIVE_HEADERS;
 };
